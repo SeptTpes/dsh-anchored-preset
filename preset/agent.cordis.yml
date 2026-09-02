@@ -1,0 +1,124 @@
+# The `code-cache-anchored` agent preset: minimal's round-1 surface, then the
+# full code-cache tool surface — one standing composition, one bootstrap gate.
+#
+# Theory of operation (see impl-presets/CHANGES-002.md for the full design and
+# impl-presets/CHANGES-004.md for the approval-channel fix):
+#
+# The deployment's HOST composition (dsh-base + dsh-web-app bundles) keeps the
+# SERVICE plane (bash-sandbox, sandbox-policy, approval, fs-sandbox, skills,
+# jobs, goals, subagents, ...) and DISABLES every model-facing tool row — the
+# Web surface lets each session mount a preset instead (web-app patch:
+# "the Web surface disables them here and lets each session mount a preset").
+# What a preset can still change is its own scope layer: this composition
+# therefore ships the MINIMAL pair (the ordinary tool-bash + the editor over
+# the host fs), the cache-aware compaction engine (the ONE code-cache
+# ingredient the host lacks), and a small bootstrap-gate plugin that flips
+# the model surface between:
+#
+#   closed (round 1)   = minimal semantics — persona sentence only, no runtime
+#                        context, catalog restricted to bash + str_replace_editor,
+#                        agent-instructions / skill-catalog injections stripped
+#   open (promoted)    = code-cache semantics — full host catalog + run_code
+#                        Code Mode presentation + cache-aware compaction
+#
+# The gate's state is a pure function of the session event log (first
+# tool/call or assistant/message promotes; the next compaction/end falls back),
+# so a resumed or forked session reconstructs the exact catalog each request
+# ran under (model-visible ⟺ logged).
+
+# ── identity ────────────────────────────────────────────────────────────────
+
+# The anchored identity: minimal's exact persona sentence. Registered WITHOUT
+# the complete flag / includeRuntimeContext: false — those are round-1
+# properties the gate applies per request in system-prompt/assemble, because a
+# static complete: true would also strip the Code Mode SDK section from every
+# promoted request. The section shadows the deployment persona by name.
+- id: persona
+  name: '@deepseek-ai/dsh-persona'
+  config:
+    text: You are a helpful software engineer assistant.
+
+# ── round-1 bash (ordinary tool-bash — TASK-005 fix) ────────────────────────
+
+# The previous design shipped minimal's persistent-shell group (pty +
+# terminal-bash + persistent-bash + win pwsh twins) in the preset scope.
+# That stack carries NO sandbox executor: minimal's persistent bash is built
+# on dsh-terminal, and the approval escalation channel (approval/asked)
+# hangs on the tool-bash sandbox executor. With no sandboxing executor in the
+# composition, escalation was unavailable — an out-of-workspace operation
+# could only hang or hard-fail ("Operation not permitted"), never ask
+# (TASK-005 attribution experiment: DSHana+anchored unreachable vs
+# DSHana+code-cache reachable).
+#
+# TASK-005 direction 2 said: remove the shadow and inherit the host's
+# tool-bash. Verification against the real web profile showed inheritance is
+# NOT available: the web-app bundle deliberately disables every host
+# model-facing tool row (tool-bash included — "lets each session mount a
+# preset instead"), so the preset must mount the ordinary tool-bash row
+# ITSELF — the exact row code-cache uses, verbatim. The host plane still
+# provides the runtime seam tool-bash resolves at each call: the bash-sandbox
+# executor, sandbox-policy, and the approval service all stay host rows, so
+# requests carrying sandbox_permissions reach approval/asked exactly like
+# code-cache's do. Round-1 semantics are unaffected: the gate's ROUND1_TOOLS
+# restrict the model surface to the same two names, and tool-bash's
+# model-face name is also "bash".
+#
+# Semantic loss recorded (CHANGES-004): round-1 bash is now NON-persistent —
+# command state does not carry across calls. Round 1 normally performs one or
+# two calls, so the impact is negligible; the minimal core (persona sentence +
+# the two tools + no injection) is fully preserved.
+- id: tool-bash
+  name: '@deepseek-ai/dsh-tool-bash'
+  disabled: !!js process.platform === 'win32'
+
+- id: tool-pwsh
+  name: '@deepseek-ai/dsh-tool-pwsh'
+  disabled: !!js process.platform !== 'win32'
+
+# ── round-1 editor ───────────────────────────────────────────────────────────
+
+# str_replace_editor. Deliberately NOT minimal's fs-local group: the host's
+# sandboxed fs provider (`fs-sandbox`) stays the single fs implementation for
+# this preset, so the promoted state's file tools (tool-fs / tool-fs-search,
+# also preset rows) behave EXACTLY like code-cache's. The round-1 model
+# surface is unaffected — the two tools it sees are the same names.
+- id: str-replace-editor
+  name: '@deepseek-ai/dsh-tool-str-replace-editor'
+  config:
+    maxOutputChars: 16000
+
+# ── compaction (code-cache's cache-aware engine, verbatim) ───────────────────
+
+# The ONLY code-cache ingredient the host composition lacks. Mounted from the
+# start (it is harmless during the one-request round 1): hot cache replays the
+# stock prefix (byte-identical to the official engine), cold cache transcribes.
+# The 回落 direction is the GATE's job (tools/presentation per state), not the
+# engine's — the engine stays mounted for the whole session.
+- id: compaction
+  name: cordis:group
+  group: true
+  isolate:
+    compaction: true
+    toolResultPruner: true
+  config:
+    - id: compaction-cache-aware
+      name: '@septtpes/dsh-compaction-cache-aware'
+      config:
+        coldMode: transcribe
+
+    - id: command-compact
+      name: '@deepseek-ai/dsh-command-compact'
+
+    - id: tool-result-pruner
+      name: '@deepseek-ai/dsh-compaction-tool-result-pruner'
+      config:
+        thresholdChars: 8192
+        headChars: 4096
+        tailChars: 1024
+
+# ── the bootstrap gate ───────────────────────────────────────────────────────
+
+# Relative path: the loader resolves it from this preset's own directory, so
+# the plugin travels with the preset. It carries NO config.
+- id: bootstrap-gate
+  name: './bootstrap-gate.js'
