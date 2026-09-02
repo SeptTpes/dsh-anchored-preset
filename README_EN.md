@@ -36,19 +36,16 @@ cp -r preset/ ~/.dsh/.agent-presets/code-cache-anchored/
 - The preset trio (`preset/preset.yml` + `preset/agent.cordis.yml` + `preset/bootstrap-gate.js`) is byte-identical to the running version (diff-verified when this repository was created).
 - Engine install path: the `dsh-compaction-cache-aware` package in `SeptTpes/dsh-cache-aware-compaction` is not on npm yet; install it with a local `dsh plugin add` first. The engine is mounted in the preset's compaction group (`coldMode: transcribe`, line-identical to the code-cache original).
 
-## Verification data (honest: not an overall win)
+## Verification data (honest: efficiency claim not supported by 2026-09-03 A/B, repeats 3)
 
-A/B comparison, 4 tasks × 2 presets (measured 2026-09-01, see `docs/AB-RESULT.md`):
+**Formal A/B experiment (36 runs, 2026-09-02/03, command-code/deepseek-v4-flash, pre-registered protocol):**
 
-| Task | Type | code-cache | anchored | Verdict |
-|---|---|---|---|---|
-| TASK-006 session analyzer CLI | generative | 3159 events / 77 tool calls | 1775 events / 28 tool calls | comparable output; anchored starts more decisively |
-| TASK-007 md2csv | generative | 12 tests green | 13 tests green | same spec, all green |
-| TASK-008 refactor (understanding) | understanding | 15-case diff all passed | 15-case diff all passed | code-cache steadier |
-| TASK-009 batch analyzer | generative | 251 lines | 258 lines | anchored completes generative tasks well |
+- **H1 (generative token efficiency) not supported**: median token drop -10.5% (< 15% threshold), mixed direction (3 tasks save, 3 tasks cost), no consistent efficiency advantage.
+- **H2 (understanding non-inferiority) not supported**: TASK-008b token regression exceeds limit (-25.6%).
+- **Pass rates all green**: both presets pass all task acceptance (100%); anchored is not inferior to code-cache in completion quality.
+- **Fingerprint divergence is real but unrelated to outcomes**: across all 36 runs, anchored always starts with "we need" style, code-cache always narrative — the style signature exists (the preset mechanism works) but does not translate into token savings.
 
-- **Verdict: anchored wins on generative tasks, code-cache wins on understanding tasks — this is not an overall win**.
-- Fingerprints: anchored round 1 showed "we need" style 4/4 vs code-cache 0/4 (same task weight, n=8); the "we need" pattern is driven by task weight (light tasks are usually narrative), see `docs/FINGERPRINT.md`.
+An earlier v0.1 observation (2026-09-01, `docs/AB-RESULT.md`, single run per cell) suggested anchored saves tokens on generative tasks, but n=1 samples cannot support that conclusion (noted in the pre-registered protocol); the 36-run formal data did not reproduce it. The preset remains a personal preference (starting style), not an efficiency claim. Full experiment reports live in [dsh-anchored-ab-kit](https://github.com/SeptTpes/dsh-anchored-ab-kit) results/.
 
 ## Lineage and acknowledgments
 

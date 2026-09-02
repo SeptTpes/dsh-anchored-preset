@@ -36,19 +36,19 @@ cp -r preset/ ~/.dsh/.agent-presets/code-cache-anchored/
 - 三件套（preset/preset.yml + preset/agent.cordis.yml + preset/bootstrap-gate.js）与运行版逐字节一致（本仓库复制时 diff 实证）。
 - 引擎安装路径说明：code-cache 引擎仓库 SeptTpes/dsh-cache-aware-compaction 的 dsh-compaction-cache-aware 包未发布 npm，先本地 dsh plugin add；引擎挂载在 preset 的 compaction 组（coldMode: transcribe，与 code-cache 原版逐行一致）。
 
-## 验证数据（诚实声明：不是全面超越）
+## 验证数据（诚实声明：2026-09-03 A/B repeats 3 实测，效率主张未获支持）
 
-A/B 四任务 × 2 预设（2026-09-01 实测，见 docs/AB-RESULT.md）：
+**A/B 正式实验（36 run，2026-09-02/03，command-code/deepseek-v4-flash，协议预注册判定）：**
 
-| 任务 | 类型 | code-cache | anchored | 结论 |
-|---|---|---|---|---|
-| TASK-006 会话分析 CLI | 生成型 | 3159 事件 / 77 工具调用 | 1775 事件 / 28 工具调用 | 产出相当，anchored 更果断 |
-| TASK-007 md2csv | 生成型 | 12 用例全绿 | 13 用例全绿 | 同规格全绿 |
-| TASK-008 重构（理解型） | 理解型 | 15 用例 diff 全过 | 15 用例 diff 全过 | code-cache 更稳 |
-| TASK-009 批量分析 | 生成型 | 251 行 | 258 行 | 生成型 anchored 完成度足 |
+- **H1（生成型 token 效率）不成立**：token 中位降幅 -10.5%（< 15% 阈值），方向混合（3 省 3 不省），无稳定效率优势。
+- **H2（理解型不劣）不成立**：008b token 恶化超上限（-25.6%）。
+- **通过率全绿**：两臂全部任务验收通过（100%），anchored 不劣于 code-cache。
+- **指纹分化真实但与结果无关**：36/36 run 中 anchored 首轮均为 we need 式、code-cache 均为叙事式——风格签名真实存在（预设机制生效），但不转化为 token 收益。
 
-- **结论：生成型任务 anchored 优，理解型任务 code-cache 优——不是全面超越**。
-- 指纹：anchored 首轮 4/4 we need 式 vs code-cache 0/4（同任务同重量，样本 8）；we need 规律受任务重量驱动（轻任务多为叙事式），详见 docs/FINGERPRINT.md。
+早期 v0.1 观察（2026-09-01，docs/AB-RESULT.md，每格单 run）曾提示生成型 anchored 更省，
+但 n=1 样本不足以支持该结论（protocol 预注册时已注明）；36 run 正式数据未复现。
+预设保留为个人偏好项（启动风格选择），不宣称效率优势。完整实验报告见
+[dsh-anchored-ab-kit](https://github.com/SeptTpes/dsh-anchored-ab-kit) 的 results/。
 
 ## 血缘与致谢
 
