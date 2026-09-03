@@ -40,9 +40,9 @@ cp -r preset/ ~/.dsh/.agent-presets/code-cache-anchored/
 
 **本预设的机制与验证边界如下，与社区原项目同款现状：**
 
-- **轨迹锚定：复现 ✓**。36/36 run（2026-09-02/03 A/B repeats 3，command-code/deepseek-v4-flash）中 anchored 首轮均为 we need 式、code-cache 均为叙事式——锚定机制真实生效（社区 9/9 同款）。
-- **能力增强：未验证（社区同款开放问题）**。本实验任务集（可达标编码任务）两臂通过率均 100%，设计上测不出能力上限差异；社区 dsh-anchored-standard 的独立复现亦未解决——anchored−standard 能力差 +3.3，95% CI [−2.6, +9.3]（含 0），multi-env 复现 98/99 未重现。原作者 2026-08 已因 API 涨价停止开发。**不宣称能力增强，亦不否定。**
-- **token 效率：与 code-cache 无差**。H1/H2 未达预注册阈值（token 中位降幅 -10.5% < 15%）——但省钱是缓存压缩引擎（code-cache）的职责，不是本预设的设计目标；两臂同一引擎，本实验的 token 结论不构成对本预设的否定。
+- **锚定签名（首轮风格）：复现 ✓**。36/36 run（2026-09-02/03 A/B repeats 3，command-code/deepseek-v4-flash）中 anchored 首轮均为 we need 式、code-cache 均为叙事式（社区 9/9 同款）。**注意：复现的是首轮风格签名，锚定向后续行为轨迹的延伸（提交时机/工具模式）未验证**（36 run 行为层方向混合，详见 [dsh-anchored-ab-kit](https://github.com/SeptTpes/dsh-anchored-ab-kit) results/）。
+- **能力增强：未验证（社区同款开放问题）**。本实验任务集（可达标编码任务）两臂通过率均 100%，设计上测不出能力上限差异；社区 dsh-anchored-standard 的独立复现亦未解决——anchored−standard 能力差 +3.3，95% CI [−2.6, +9.3]（含 0，[issue #65](https://github.com/xiaobright/dsh-anchored-standard/issues/65)），multi-env 复现 98/99 未重现（[issue #51](https://github.com/xiaobright/dsh-anchored-standard/issues/51)）。社区原始 98/99/99 验证分数早于当前组合，原作者声明不得归于通用模板（[issue #60](https://github.com/xiaobright/dsh-anchored-standard/issues/60)）；原作者 2026-08 已因 API 涨价停止开发。**不宣称能力增强，亦不否定。**
+- **token 效率：与 code-cache 无差**。H1/H2 未达预注册阈值（token 中位降幅 -10.5% < 15%）——但省钱是缓存压缩引擎（code-cache）的职责，不是本预设的设计目标；两臂同一引擎，本实验的 token 结论不构成对本预设的否定。**v0.1 观察退役：早期 [docs/AB-RESULT.md](docs/AB-RESULT.md)「生成型 anchored 优」（事件数口径，n=1）未复现，正式数据（36 run）工具调用/事件方向混合，该结论不再引用。**
 
 完整实验记录见 [dsh-anchored-ab-kit](https://github.com/SeptTpes/dsh-anchored-ab-kit) 的 results/。
 
