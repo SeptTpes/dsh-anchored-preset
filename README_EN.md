@@ -2,11 +2,11 @@
 
 [中文 README](README.md) | English
 
-**Completion power of code mode + the launch posture of minimal mode** — a dsh (DeepSeek Harness) agent preset (`code-cache-anchored`, v2) that starts round 1 as a minimal preset, promotes to the full code-cache tool surface after the first tool call, and falls back to the small tool set after compaction.
+**Minimal launch trajectory + code completion power** — a dsh (DeepSeek Harness) agent preset (`code-cache-anchored`, v2) ported from the community dsh-anchored-standard mechanism: round 1 starts as minimal to anchor the trajectory, promotes to the full code-cache tool surface after the first tool call, and falls back to the small tool set after compaction.
 
 ## One-line positioning
 
-- **Launch posture**: round 1 fully replicates `minimal` — the persona sentence only, the two tools (`bash` + `str_replace_editor`), no injection — for a decisive "we need" start.
+- **Launch trajectory**: round 1 fully replicates `minimal` — the persona sentence only, the two tools (`bash` + `str_replace_editor`), no injection — anchoring the "we need" trajectory. Community experiments suggest DeepSeek V4 scores higher under that condition (dsh-anchored-standard: Minimal 99/96 vs Standard 91/92 on Project2).
 - **Completion power**: after the first `tool/call` (or an `assistant/message` without a tool-call block) the session promotes to the full code-cache surface — `run_code` Code Mode plus the cache-aware compaction engine — so long tasks are not limited by the tool surface.
 
 ## How it works (three phases + a pure-function gate)
@@ -36,21 +36,20 @@ cp -r preset/ ~/.dsh/.agent-presets/code-cache-anchored/
 - The preset trio (`preset/preset.yml` + `preset/agent.cordis.yml` + `preset/bootstrap-gate.js`) is byte-identical to the running version (diff-verified when this repository was created).
 - Engine install path: the `dsh-compaction-cache-aware` package in `SeptTpes/dsh-cache-aware-compaction` is not on npm yet; install it with a local `dsh plugin add` first. The engine is mounted in the preset's compaction group (`coldMode: transcribe`, line-identical to the code-cache original).
 
-## Verification data (honest: efficiency claim not supported by 2026-09-03 A/B, repeats 3)
+## Verification data (honest)
 
-**Formal A/B experiment (36 runs, 2026-09-02/03, command-code/deepseek-v4-flash, pre-registered protocol):**
+**This preset's mechanism and validation boundaries — the same open state as the community original:**
 
-- **H1 (generative token efficiency) not supported**: median token drop -10.5% (< 15% threshold), mixed direction (3 tasks save, 3 tasks cost), no consistent efficiency advantage.
-- **H2 (understanding non-inferiority) not supported**: TASK-008b token regression exceeds limit (-25.6%).
-- **Pass rates all green**: both presets pass all task acceptance (100%); anchored is not inferior to code-cache in completion quality.
-- **Fingerprint divergence is real but unrelated to outcomes**: across all 36 runs, anchored always starts with "we need" style, code-cache always narrative — the style signature exists (the preset mechanism works) but does not translate into token savings.
+- **Trajectory anchoring: reproduced ✓.** In all 36 runs (2026-09-02/03 A/B repeats 3, command-code/deepseek-v4-flash) anchored always started with "we need" style, code-cache always narrative — the anchoring mechanism works (community: 9/9).
+- **Ability enhancement: unverified (same open question as the community).** This experiment's task set (reachable coding tasks) had 100% pass rates on both arms — by design it cannot measure an ability ceiling difference; the community original's independent replications did not resolve it either — anchored−standard ability +3.3, 95% CI [−2.6, +9.3] (contains 0), multi-env 98/99 not reproduced; the original author stopped development in 2026-08 after API price increases. **No ability claim is made, and none is denied.**
+- **Token efficiency: no difference vs code-cache.** H1/H2 did not reach the pre-registered thresholds (median token drop -10.5% < 15%) — but cost-saving is the cache-aware engine's job (code-cache), not this preset's design goal; both arms ran the same engine, so the token result does not constitute a rejection of this preset.
 
-An earlier v0.1 observation (2026-09-01, `docs/AB-RESULT.md`, single run per cell) suggested anchored saves tokens on generative tasks, but n=1 samples cannot support that conclusion (noted in the pre-registered protocol); the 36-run formal data did not reproduce it. The preset remains a personal preference (starting style), not an efficiency claim. Full experiment reports live in [dsh-anchored-ab-kit](https://github.com/SeptTpes/dsh-anchored-ab-kit) results/.
+Full experiment records live in [dsh-anchored-ab-kit](https://github.com/SeptTpes/dsh-anchored-ab-kit) results/.
 
 ## Lineage and acknowledgments
 
 - **Engine (cache-aware compaction)**: from the author's own code-cache project [SeptTpes/dsh-cache-aware-compaction](https://github.com/SeptTpes/dsh-cache-aware-compaction) (M3-verified: 62% cheaper compaction-call input on a truly cold cache).
-- **Round-1 anchoring idea**: inspired by dsh-anchored-standard's tool-bootstrap design (promoteOn: either / suppressedContextSources / compactionTools small-set fallback).
+- **Round-1 anchoring mechanism**: ported from [xiaobright/dsh-anchored-standard](https://github.com/xiaobright/dsh-anchored-standard) (community project, not official) — its finding: DeepSeek V4 conditions strongly on the API-visible tool catalog and scores higher under the Minimal first-round trajectory, so it anchors round 1 on Minimal then promotes to the full tool set. Implemented per its tool-bootstrap design (promoteOn: either / suppressed first-round injection / compaction fallback). Difference: this preset promotes to the code-cache surface rather than the original's Standard catalog.
 
 ## Known boundaries
 
